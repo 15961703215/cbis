@@ -1,35 +1,12 @@
-﻿const router = require('koa-router')();
-const fs = require('fs');
-const util = require('util');
-const path = require('path');
-const userModel = require('../lib/mysql');
-const pdfConverter = require('../lib/pdf-converter');
-const mkdirAsync = util.promisify(fs.mkdir);
-const unlinkAsync = util.promisify(fs.unlink);
 
-const rootPath = path.resolve(__dirname, '..').replace(/\\/g, "/");
-const reportImageDir = path.join(rootPath, 'public/images/reports');
+const router = require('koa-router')();
+const fs =require('fs');
+const path = require('path');
+const stream = require('stream');
+const rootPath = path.resolve(__dirname, '..').replace(/\\/g,"/");
+const userModel = require('../lib/mysql.js');  //数据库接口
 
 router.prefix('/reports');
-
-// 中间件：访问令牌验证
-const validateToken = async (ctx, next) => {
-	const validTokens = new Set(["1k25td5DoFVps", process.env.API_TOKEN]);
-	if (!validTokens.has(ctx.query.accessToken)) {
-	  ctx.throw(401, 'Invalid access token');
-	}
-	await next();
-  };
-  
-  // 中间件：安全路径验证
-  const validateFilePath = (filePath) => {
-	const allowedDirs = [
-	  path.join(rootPath, 'reports'),
-	  path.join(rootPath, 'public')
-	];
-	const resolvedPath = path.resolve(filePath);
-	return allowedDirs.some(dir => resolvedPath.startsWith(dir));
-  };
 
 // 返回详细报告页面1,对外接口，可直接访问详细报告页面，暂时先用起来
 router.get('/webPage',  async function (ctx, next) {
@@ -334,53 +311,5 @@ router.get('/CheckPdfFile', async (ctx) => {
         ctx.body = { exists: false };
     }
 });
-
-// ---------------------- 新增PDF转换功能 ----------------------
-/**
- * @api {get} /reports/convert/:reqid 转换PDF为JPG
- * @apiParam {String} reqid 报告唯一ID
- * @apiQuery {String} accessToken 访问令牌
- */
-router.get('/convert/:reqid', async (ctx) => {
-	try {
-	  const { reqid } = ctx.params;
-  
-	  // 1. 查询数据库
-	  const [report] = await userModel.query(
-		'SELECT bioxreport, jpgurl FROM report WHERE reqid = ?',
-		[reqid]
-	  );
-  
-	  if (!report) ctx.throw(404, '报告不存在');
-	  if (!report.bioxreport || !fs.existsSync(report.bioxreport)) {
-		ctx.throw(404, 'PDF文件不存在');
-	  }
-  
-	  // 2. 如果已有转换结果直接返回
-	  if (report.jpgurl) {
-		ctx.body = { url: report.jpgurl };
-		return;
-	  }
-  
-	  // 3. 执行转换
-	  const jpgUrl = await pdfConverter.convert({
-		pdfPath: report.bioxreport,
-		reqid,
-		outputDir: reportImageDir
-	  });
-  
-	  // 4. 更新数据库
-	  await userModel.query(
-		'UPDATE report SET jpgurl = ? WHERE reqid = ?',
-		[jpgUrl, reqid]
-	  );
-  
-	  ctx.body = { url: jpgUrl };
-  
-	} catch (err) {
-	  ctx.status = 500;
-	  ctx.body = { error: err.message };
-	}
-  });
 
 module.exports = router;
