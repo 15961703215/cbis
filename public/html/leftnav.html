@@ -1,0 +1,134 @@
+<!--
+/*****************************************************************************
+ *****************************************************************************/
+-->
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html>
+<head>
+	<script src="/js/jquery-3.3.1.min.js" type="text/javascript"></script>
+	<style type="text/css">
+		body{
+			margin: 0px;
+			background: #333;
+		}
+		.csnavmenu{
+			background: #333;
+			position: relative;
+			list-style: none;
+		}
+		.csnavmenu ul { list-style: none; white-space: nowrap; margin: 0; padding: 0;}
+		.csnavmenu li a:hover{ background: #666; text-decoration: none;}
+		.csnavmenu a{ display: block; color: #fff; line-height: 40px; padding: 0 1px; text-decoration: none;}
+		.csnavmenu a.selected { background: #777;}
+	</style>
+</head>
+<body>
+<ul class="csnavmenu">
+	<li id="agentsId"><a data-url="/institutions/ManagePage">机构管理</a></li>
+	<li id="hospsId"><a data-url="/hosps/ManagePage">医院管理</a></li>
+	<li id="rolesId"><a data-url="/roles/ManagePage">角色管理</a></li>
+	<li id="usersId"><a data-url="/users/ManagePage">用户管理</a></li>
+	<li id="patientsId"><a data-url="/patients/all/managerPage">病人信息</a></li>
+	<li id="reportsId" ><a target="view_frame" data-url="/reports/all/managerPage">报告管理</a></li>
+</ul>
+<script type="text/javascript">
+	var accessToken = "";
+	function setNav(access,authorizes){
+		$("li").hide(); // 隐藏所有
+		accessToken = access;
+		if(accessToken){
+			for(var i = 0,l = authorizes.length;i<l ; i++){
+				switch (authorizes[i]) {
+					case 1:{
+						$('#usersId').show();
+						$('#rolesId').show();
+						$('#hospsId').show();
+						$('#agentsId').show();
+					}
+						break;
+					case 2:{
+						$('#reportsId').show();
+					}
+						break;
+					case 3:{
+					}
+						break;
+					case 4:{
+					}
+						break;
+					case 5:{
+						$('#reportsId').show();
+					}
+						break;
+					case 6:{
+						$('#patientsId').show();
+					}
+						break;
+					case 7:{
+						$('#patientsId').show();
+					}
+						break;
+					case 8:{
+						$('#patientsId').show();
+					}
+						break;
+					case 9:{
+						$('#patientsId').show();
+					}
+						break;
+
+				}
+			}
+			var href = $('li a:visible').data('url') + "?accessToken=" + accessToken;
+			$(window.parent.document).find("#viewer").attr("src",href);
+		}
+	}
+	var aut = localStorage.getItem("authorizes");
+	var accessToken = localStorage.getItem("accessToken");
+
+
+	var bValidAccessToken=false;
+
+	if(!accessToken){
+
+	}else {
+		$.ajax({
+			cache: true,
+			type: "post",
+			timeout: 2000,
+			url: "/users/ValidAccessToken",
+			data: {
+				accessToken: accessToken,
+			},
+			async: false,
+			headers: { // 叠加式添加
+				Accept: "application/json; charset=utf-8",
+				accessToken: "login"
+			},
+			beforeSend: function (xhr) {
+				// xhr.setRequestHeader('accessToken', 'test-value'); // 叠加式添加
+			},
+			error: function (xhr, statusText, errorThrown) { // XMLHttpRequest
+
+			},
+			success: function (result, statusText, xhr) {
+				if (result.status=="successful"){
+					bValidAccessToken=true;
+				}
+			}
+		});
+	}
+
+
+	if(!bValidAccessToken){
+		$(window.parent.document).find("#viewer").attr("src","/users/loginPage");
+	}else {
+		setNav(accessToken,JSON.parse(aut));
+	}
+	$("li a").on("click",function () {
+		var href = $(this).data('url') + "?accessToken=" + accessToken;
+		$(window.parent.document).find("#viewer").attr("src",href);
+	});
+</script>
+</body>
+</html>

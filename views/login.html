@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+	<meta charset="UTF-8">
+	<title>Login Form</title>
+	<!--<link rel="stylesheet" href="/css/loginStyle.css">-->
+	<script src="/js/jquery-3.3.1.min.js" type="text/javascript"></script>
+	<style>
+		html {
+			width: 100%;
+			height: 100%;
+			overflow: hidden;
+			font-style: sans-serif;
+		}
+
+		body {
+			width: 100%;
+			height: 100%;
+			font-family: 'Open Sans', sans-serif;
+			margin: 0;
+			background-color: #4A374A;
+		}
+
+		.login {
+			position: absolute;
+			top: 50%;
+			left: 50%;
+			margin: -150px 0 0 -150px;
+			width: 300px;
+			height: 300px;
+		}
+
+		.login h1 {
+			color: #fff;
+			text-shadow: 0 0 10px;
+			letter-spacing: 1px;
+			text-align: center;
+		}
+
+		h1 {
+			font-size: 2em;
+			margin: 0.67em 0;
+		}
+
+		input {
+			width: 278px;
+			height: 18px;
+			margin-bottom: 10px;
+			outline: none;
+			padding: 10px;
+			font-size: 13px;
+			color: #fff;
+			text-shadow: 1px 1px 1px;
+			border-top: 1px solid #312E3D;
+			border-left: 1px solid #312E3D;
+			border-right: 1px solid #312E3D;
+			border-bottom: 1px solid #56536A;
+			border-radius: 4px;
+			background-color: #2D2D3F;
+		}
+
+		.but {
+			width: 300px;
+			min-height: 20px;
+			display: block;
+			background-color: #4a77d4;
+			border: 1px solid #3762bc;
+			color: #fff;
+			padding: 9px 14px;
+			font-size: 15px;
+			line-height: normal;
+			border-radius: 5px;
+			margin: 0;
+		}
+	</style>
+</head>
+<body>
+<div class="login">
+	<h1>登录</h1>
+	<form method="post" action="">
+		<input id="account" type="text" name="u" placeholder="帐号" required="required"/>
+		<input id="password" type="password" name="p" placeholder="密码" required="required"/>
+		<img id="imgverycode" src="/Captcha" onclick="editCaptcha()" alt="验证码图片"/>
+		<input id="verifycode" type="verifycode" name="c" placeholder="验证码" required="required"/>
+		<button id="login" type="button" class="but">登录</button>
+		</br>
+		<a id="showResult" style="color: white"></a>
+	</form>
+</div>
+<script type="text/javascript">
+	$(function () {
+		localStorage.setItem("accessToken", "");
+		localStorage.setItem("refreshToken", "");
+		localStorage.setItem("userName", "");
+		localStorage.setItem("authorizes", "");
+		window.parent.frames["head_frame"].window.setHead("","");
+		window.parent.frames["nav_frame"].window.setNav("","");
+		imgsrc='/Captcha';
+	});
+
+
+
+	function editCaptcha(){
+		$("#imgverycode").attr('src','/Captcha?d=' + Math.random());
+		//alert("test!");
+	};
+
+	$("#login").on('click', function () {
+		var account = $("#account").val();
+		var password = $("#password").val();
+		var verifycode=$("#verifycode").val();
+
+		$.ajax({
+			cache: true,
+			type: "post",
+			timeout: 2000,
+			url: "/users/weblogin",
+			data: {
+				username: account,
+				password: password,
+				verifycode: verifycode
+			},
+			async: false,
+			headers: { // 叠加式添加
+				Accept: "application/json; charset=utf-8",
+				accessToken: "login"
+			},
+			beforeSend: function (xhr) {
+				// xhr.setRequestHeader('accessToken', 'test-value'); // 叠加式添加
+			},
+			error: function (xhr, statusText, errorThrown) { // XMLHttpRequest
+				// alert("错误提示： status:" + xhr.status + " responseText:" + xhr.responseText);
+				if (xhr.status != 200) {
+					if (xhr.status==401) {
+						$("#showResult").text("验证码错误,请重新输入.");
+						$("#account").attr("readOnly", false);
+						$("#password").attr("readOnly", false);
+					}else if (xhr.status==402) {
+						$("#showResult").text("输入密码错误次数过多,请明天再登录.");
+						$("#account").attr("readOnly", false);
+						$("#password").attr("readOnly", false);
+					}else if (xhr.status != 0) {
+							$("#showResult").text("账号或密码错误,请重新输入.");
+							$("#account").attr("readOnly", false);
+							$("#password").attr("readOnly", false);
+					}else {
+						$("#showResult").text("服务器连接错误!");
+						$("#account").attr("readOnly", false);
+						$("#password").attr("readOnly", false);
+					}
+				}
+			},
+			success: function (result, statusText, xhr) {
+				$("#showResult").text("登录成功.");
+				$("#account").attr("readOnly", true);
+				$("#password").attr("readOnly", true);
+				localStorage.setItem("accessToken", result.accessToken);
+				localStorage.setItem("refreshToken", result.refreshToken);
+				localStorage.setItem("accessTime",result.accessTime);
+				localStorage.setItem("userName", result.name);
+				localStorage.setItem("authorizes", JSON.stringify(result.authorizes));
+
+				var localUrl = window.location.href;
+				if (localUrl.indexOf('/users/loginPage') != -1) {
+					// iframe -> parent -> iframe
+					window.parent.frames["head_frame"].window.setHead(result.accessToken,result.name);
+					window.parent.frames["nav_frame"].window.setNav(result.accessToken,result.authorizes);
+				} else {
+					location.href = localUrl + "?accessToken=" + result.accessToken;
+				}
+			}
+		});
+	});
+</script>
+</body>
+
+</html>

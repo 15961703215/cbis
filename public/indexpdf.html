@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Centered Text with Iframe Example</title>
+    <style>
+        /* 使页面内容全屏并且没有滚动条 */
+        html, body {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            width: 100%;
+            overflow: hidden;
+            display: -ms-flexbox; /* 兼容 IE10, IE11 */
+            display: flex;        /* 兼容现代浏览器 */
+            -ms-flex-align: center; /* 兼容 IE10 */
+            align-items: center;
+            -ms-flex-pack: center; /* 兼容 IE10 */
+            justify-content: center;
+        }
+        
+        table {
+            width: 100%;
+            height: 100%;
+            border-collapse: collapse;
+            table-layout: fixed; /* 兼容IE */
+        }
+
+        /* iframe 样式 */
+        iframe {
+            width: 100%;
+            height: 100%;
+            border: none; /* 移除边框 */
+        }
+    </style>
+</head>
+<body>
+    <table>
+        <tr>
+            <td>
+                <iframe id="pdf-iframe" title="Embedded PDF"></iframe>
+            </td>
+        </tr>
+    </table>
+
+    <script>
+        // 兼容IE11及以下版本的获取URL参数的函数
+        function getQueryParameter(name) {
+            var query = window.location.search.substring(1);
+            var params = query.split('&');
+            for (var i = 0; i < params.length; i++) {
+                var pair = params[i].split('=');
+                if (pair[0] === name) {
+                    return decodeURIComponent(pair[1]);
+                }
+            }
+            return null;
+        }
+
+        // 设置iframe的src属性
+        document.addEventListener('DOMContentLoaded', function() {
+            var pdfPath = getQueryParameter('file');
+            if (pdfPath) {
+                var iframe = document.getElementById('pdf-iframe');
+                iframe.src = "web/viewer.html?file=" + encodeURIComponent(pdfPath);
+            } else {
+                alert('No PDF file specified.');
+            }
+        });
+    </script>
+</body>
+</html>

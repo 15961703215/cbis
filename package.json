@@ -1,0 +1,58 @@
+{
+  "name": "cbis",
+  "version": "1.0.0",
+  "description": "CB心电血压信息管理系统",
+  "main": "app.js",
+  "directories": {
+    "doc": "doc",
+    "lib": "lib"
+  },
+  "dependencies": {
+    "@koa/multer": "^3.0.2",
+    "chalk": "^4.1.1",
+    "crypto-js": "^4.2.0",
+    "ejs": "^3.1.6",
+    "formidable": "^1.2.2",
+    "fs": "0.0.1-security",
+    "gm": "^1.25.0",
+    "http": "0.0.1-security",
+    "iconv-lite": "^0.6.3",
+    "json2csv": "^5.0.6",
+    "jsshortid-helper": "^0.1.0",
+    "koa": "^2.13.1",
+    "koa-body": "^4.2.0",
+    "koa-router": "^10.0.0",
+    "koa-session": "^6.2.0",
+    "koa-static": "^5.0.0",
+    "koa-views": "^7.0.1",
+    "koa2-cors": "^2.0.6",
+    "lodash": "^4.17.21",
+    "log4js": "^6.3.0",
+    "multer": "^1.4.5-lts.1",
+    "multiparty": "^4.2.2",
+    "mysql": "^2.18.1",
+    "node-windows": "^1.0.0-beta.5",
+    "pdf-poppler": "^0.2.1",
+    "request": "^2.88.2",
+    "request-promise-native": "^1.0.9",
+    "spark-md5": "^3.0.1",
+    "svg-captcha": "^1.4.0"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/shengwang2000/CHIS-PRO.git"
+  },
+  "keywords": [
+    "CBIS"
+  ],
+  "author": "wangsheng",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/shengwang2000/CHIS-PRO/issues"
+  },
+  "homepage": "https://github.com/shengwang2000/CHIS-PRO#readme"
+}

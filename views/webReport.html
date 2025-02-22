@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+	<!--<meta http-equiv="x-ua-compatible" content="text/html; charset=utf-8" />-->
+
+	<link href="/viewer/viewer.min.css" rel="stylesheet">
+	<!--JQUERY 3.3.2 只支持IE9及以上的浏览器-->
+	<!--<script src="/js/jquery-3.3.1.min.js" type="text/javascript"></script>-->
+	<!--支持IE8及以下系统-->
+	<script src="/js/jquery-1.11.1.min.js" type="text/javascript"></script>
+
+	<script src="/viewer/viewer.min.js" type="text/javascript"></script>
+
+    <!--解决IE6 IE7,IE8 JSON.stringify JSON 未定义问题-->
+    <script src="/js/json2.js" type="text/JavaScript"></script>
+
+	<style type="text/css">
+		body, html{
+			margin: 0px;
+			height: 100%;
+			width:100%;
+			background: #333;
+			color: #FFFFFF;
+		}
+
+		.auto-height {
+			height: 100%;
+		}
+		.auto-width {
+			width: 100%;
+		}
+
+		/* 默认样式 */
+		table {
+			width: 100%;
+			height: 100%;
+		}
+
+	</style>
+</head>
+<body>
+<table >
+	<tr  id="pdfviewer">
+
+	</tr>
+</table>
+
+<script type="text/javascript">
+    // 获取窗口高度和宽度
+    var windowHeight = window.innerHeight || document.documentElement.clientHeight;
+    var windowWidth = window.innerWidth || document.documentElement.clientWidth;
+
+    // 设置PDF查看器的高度和宽度
+    var element = document.getElementById('pdfviewer');
+    element.style.height = (windowHeight - 30) + 'px';
+    element.style.width = (windowWidth) + 'px';
+
+    // 获取路径
+    var path = '<%= pdfPath %>';
+
+
+
+   if (path === "") {
+        var bookCon = document.getElementById("pdfviewer");
+        var newTr = document.createElement("h1");
+        newTr.innerHTML = "<a>无报告记录</a>";
+        bookCon.insertBefore(newTr, bookCon.children[0]);
+    } else {
+
+		// 提取文件名
+		var fileName = path.substring(path.lastIndexOf('/') + 1);
+		if (fileName === path) {
+			fileName = path.substring(path.lastIndexOf('\\') + 1);
+		}
+
+		$.ajax({
+		url: '/reports/CheckPdfFile?filepath='+encodeURIComponent(path),
+		type: 'GET',
+		success: function(data) {
+			handleResponse(data);
+		},
+		error: function(xhr, status, error) {
+			console.error('Error checking file:', status, error);
+		}
+		});
+
+		function handleResponse(data) {
+		if (data.exists) {
+		// 使用传统字符串连接方式来创建iframe
+		var iframeSrc = "/indexpdf.html?file=../"+ encodeURIComponent(fileName);
+			var template = $('<iframe src="' + iframeSrc + '" width="100%" height="100%"></iframe>');
+			$('#pdfviewer').append(template);
+	
+		} else {
+			var bookCon = document.getElementById("pdfviewer");
+			var newTr = document.createElement("h1");
+			newTr.innerHTML = "<a>有记录，但是未找到报告文件</a>";
+			bookCon.insertBefore(newTr, bookCon.children[0]);
+		}
+		}
+
+    }
+
+	// $.get('/reports/CheckPdfFile?filepath=${path}', function(data) {
+    // if (data.exists) {
+    //     // 使用传统字符串连接方式来创建iframe
+    //     var iframeSrc = "/indexpdf.html?file=../"+ encodeURIComponent(fileName);
+    //     var template = $('<iframe src="' + iframeSrc + '" width="100%" height="100%"></iframe>');
+    //     $('#pdfviewer').append(template);
+    // } else {
+    //     var bookCon = document.getElementById("pdfviewer");
+    //     var newTr = document.createElement("h1");
+    //     newTr.innerHTML = "<a>未找到报告</a>";
+    //     bookCon.insertBefore(newTr, bookCon.children[0]);
+    // }
+	// });
+
+
+    // // 检查路径是否为空
+    // if (path === "") {
+    //     var bookCon = document.getElementById("pdfviewer");
+    //     var newTr = document.createElement("h1");
+    //     newTr.innerHTML = "<a>未找到报告</a>";
+    //     bookCon.insertBefore(newTr, bookCon.children[0]);
+    // } else {
+
+    //     // 使用传统字符串连接方式来创建iframe
+    //     var iframeSrc = "/indexpdf.html?file=../"+ encodeURIComponent(fileName);
+    //     var template = $('<iframe src="' + iframeSrc + '" width="100%" height="100%"></iframe>');
+    //     $('#pdfviewer').append(template);
+    // }
+</script>
+</body>
+</html>

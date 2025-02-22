@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+	<link rel="stylesheet" type="text/css" media="screen" href="/jqgrid/themes/ui-darkness/jquery-ui.min.css" />
+	<link rel="stylesheet" type="text/css" media="screen" href="/jqgrid/css/ui.jqgrid.min.css" />
+	<script src="/js/jquery-3.3.1.min.js" type="text/javascript"></script>
+	<script src="/jqgrid/js/grid.locale-cn.min.js" type="text/javascript"></script>
+	<script src="/jqgrid/js/jquery.jqGrid.min.js" type="text/javascript"></script>
+	<script src="/js/jquery-ui.min.js" type="text/javascript"></script>
+	<style type="text/css">
+		body{
+			margin: 0px;
+			background: #333;
+		}
+	</style>
+</head>
+<body>
+<table id="list"></table>
+<div id="pager"></div>
+<script type="text/javascript">
+	$(function() {
+		$(window.parent.frames['nav_frame'].document).find("a").removeClass("selected");
+		$(window.parent.frames['head_frame'].document).find("a").removeClass("selected");
+		$(window.parent.frames['nav_frame'].document).find("#usersId a").attr("class","selected"); // a[href='/reports/all/managerPage']
+	});
+	function pageSize() {
+		var winW, winH;
+		if(window.innerHeight) {// all except IE
+			winW = window.innerWidth;
+			winH = window.innerHeight;
+		} else if (document.documentElement && document.documentElement.clientHeight) {// IE 6 Strict Mode
+			winW = document.documentElement.clientWidth;
+			winH = document.documentElement.clientHeight;
+		} else if (document.body) { // other
+			winW = document.body.clientWidth;
+			winH = document.body.clientHeight;
+		}  // for small pages with total size less then the viewport
+		return {WinW:winW, WinH:winH};
+	}
+	$(function(){
+		$(window).resize(function(){
+			$(window).unbind("onresize");
+			var winWh = pageSize();
+			$("#list").jqGrid('setGridWidth', winWh.WinW-16).jqGrid('setGridHeight', winWh.WinH-100);
+			$(window).bind("onresize", this);
+		});
+	});
+
+	// 权限列表
+	var roles = {};
+	$.ajax({
+		cache: true,
+		type: "get",
+		timeout:2000,
+		url: "/roles/AllRole",
+		data:{},
+		async: false,
+		headers: { // 叠加式添加
+			Accept: "application/json; charset=utf-8",
+			accessToken:"abcd"
+		},
+		beforeSend: function(xhr){
+			// xhr.setRequestHeader('accessToken', 'test-value'); // 叠加式添加
+		},
+		error: function(xhr, statusText, errorThrown) { // XMLHttpRequest
+			// alert("错误提示： status:" + xhr.status + " responseText:" + xhr.responseText);
+			if(xhr.status != 200){
+				alert("错误提示： status:" + xhr.status + " responseText:" + statusText);
+			}
+		},
+		success: function(result,statusText,xhr) {
+			roles = result.rows;
+		}
+	});
+
+
+	//机构列表
+	var institutions = {};
+	$.ajax({
+		cache: true,
+		type: "get",
+		timeout:2000,
+		url: "/institutions/AllInstitution",
+		data:{},
+		async: false,
+		headers: { // 叠加式添加
+			Accept: "application/json; charset=utf-8",
+			accessToken:"abcd"
+		},
+		beforeSend: function(xhr){
+			// xhr.setRequestHeader('accessToken', 'test-value'); // 叠加式添加
+		},
+		error: function(xhr, statusText, errorThrown) { // XMLHttpRequest
+			// alert("错误提示： status:" + xhr.status + " responseText:" + xhr.responseText);
+			if(xhr.status != 200){
+				alert("错误提示： status:" + xhr.status + " responseText:" + statusText);
+			}
+		},
+		success: function(result,statusText,xhr) {
+			institutions = result.rows;
+		}
+	});
+
+
+	//医院列表
+	var hosps = {};
+	$.ajax({
+		cache: true,
+		type: "get",
+		timeout:2000,
+		url: "/hosps/AllHosp",
+		data:{},
+		async: false,
+		headers: { // 叠加式添加
+			Accept: "application/json; charset=utf-8",
+			accessToken:"abcd"
+		},
+		beforeSend: function(xhr){
+			// xhr.setRequestHeader('accessToken', 'test-value'); // 叠加式添加
+		},
+		error: function(xhr, statusText, errorThrown) { // XMLHttpRequest
+			// alert("错误提示： status:" + xhr.status + " responseText:" + xhr.responseText);
+			if(xhr.status != 200){
+				alert("错误提示： status:" + xhr.status + " responseText:" + statusText);
+			}
+		},
+		success: function(result,statusText,xhr) {
+			hosps = result.rows;
+
+
+			// 增加医院对应的机构名称,用于显示
+			for(var i = 0,len=hosps.length; i < len; i++) {
+				var bFind=false;
+				for(var j = 0,len1=institutions.length; j < len1; j++) {
+
+					if (hosps[i].Institutionid==institutions[j]._id) {
+						bFind=true;
+						hosps[i].institutionname=institutions[j].name;
+
+						break;
+					}
+				}
+				if (!bFind){
+					//alert("错误提示");
+					hosps[i].institutionname="No Institutionname";
+				}
+			}
+
+		}
+	});
+
+
+
+	$(document).ready(
+		function() {
+			var winWh = pageSize();
+			jQuery("#list").jqGrid({
+				url:'/users/AllUser',
+				postData:{accessToken:"abcd"},
+				datatype: "json",
+				mtype : "GET",
+				shrinkToFit:true,
+				height: winWh.WinH-100,
+				width:"100%",
+				autowidth:true,
+				colNames:['ID','帐号','用户名','角色','机构 - 医院'],
+				colModel:[
+					{name:'_id',index:'_id', hidden:true,editable : false,sorttype:'integer'}, //width:60,
+					{name:'Account',index:'Account',editor:"text", editable : true, width:150},
+					{name:'Name',index:'Name',editor:"text", editable : true, width:150},
+					{name:'Role',index:'Role', editable : false, width:150,formatter:roleFormat,unformat:roleUnFormat},
+					{name:'Hospid',index:'Hospid', editable : false, width:500,formatter:hospFormat,unformat:hospUnFormat}
+				],
+				loadonce: true,
+				sortname:'_id',
+				sortorder:'asc',
+				viewrecords:true,
+				rowNum:20,
+				rowList:[10,20,30],
+				pager:"#pager",
+				caption: "用户管理",
+				multiselect: false,
+				jsonReader: {
+					id: "_id",
+					root : "rows",
+					page:"page",
+					total:"total",
+					records:"records",
+					repeatitems: false
+				},
+				loadComplete:function(xhr){
+					var i =0;
+				}
+			});
+			jQuery("#list").jqGrid('navGrid','#pager',{add:true,edit:true,del:true,search:false,refresh:false},
+				{ // edit
+					checkOnSubmit:false, closeAfterEdit: true,height:280,reloadAfterSubmit:false,modal: true,
+					url:"/users",
+					mtype:"put",
+					beforeShowForm : function(form) {
+						form.find('#Account').attr('readOnly',true);//把编辑框中的字段设置为只读的。
+					},
+					onclickSubmit: function(params, postData) {
+						params.url = "/users/" + postData.Account + "/name";
+						return [true,''];
+					},
+					beforeSubmit:function(postData, formid) {
+						return [true,''];
+					},
+					afterSubmit:function(response, postData){
+
+						$("#list").jqGrid().setGridParam({datatype:'json',page:1}).trigger('reloadGrid');   //重新从服务器获取数据
+						return [true,''];
+					}
+				},
+				{ // add
+					checkOnSubmit:false, closeAfterAdd: true,height:280,reloadAfterSubmit:false,modal: true,jqModal: true,addedrow:'last',
+					url:"/users",
+					mtype:"post",
+					onclickSubmit: function(params, postData) {
+						params.url = "/users/AddExpressUser" ;
+						return [true,''];
+					},
+					beforeSubmit:function(postData, formid) {
+						// check
+						/* if(postData.id_room.replace(/(^s*)|(s*$)/g, "").length ==0)
+						 {
+						 return [false,'Name is empty!'];
+						 }*/
+						return [true,''];
+					},
+					afterSubmit:function(response, postData,editOrAdd){
+						var result=response.responseJSON;
+						// postData.id = result.id;
+
+						$("#list").jqGrid().setGridParam({datatype:'json',page:1}).trigger('reloadGrid');   //重新从服务器获取数据
+						return [true,"",result.id];
+					}
+				},
+				{ // del
+					checkOnSubmit:false, reloadAfterSubmit:false,modal: true,
+					url:"/users",
+					mtype:"delete",
+					onclickSubmit: function(params, postData) {
+						params.url = "/users/" + postData;
+						return [true,''];
+					},
+					afterSubmit:function(response, postData) {
+
+						$("#list").jqGrid().setGridParam({datatype:'json',page:1}).trigger('reloadGrid');   //重新从服务器获取数据
+						return [true, ''];
+					}
+				},
+				{} // search
+			);
+		});
+
+	function roleFormat(cellValue,options,rowObject){
+		var res = '';
+		var option = "";
+		//res+='<select name="selectrole" id="select_role" class="roleselector" style="height:18px;width: 100px;vertical-align:middle" onchange="selectOnChange(this)">';
+		option='<select name="' + rowObject.Account+ '" id="select_role" class="roleselector" style="height:18px;width: 150px;vertical-align:middle" onchange="selectOnChange(this)">';
+		res += option;
+		for(var i = 0,len=roles.length; i < len; i++) {
+			//if (i==cellValue-1) {
+			if (roles[i]._id==cellValue) {
+				option = "<option value=" + roles[i]._id + " selected=true>" + roles[i].name + "</option>";
+			}else{
+				option = "<option value=" + roles[i]._id + ">" + roles[i].name + "</option>";
+			}
+			res+=option;
+		}
+		res += '<select/>';
+		return res;
+	}
+	function roleUnFormat(cellValue,options,cell){
+		return $('input',cell).val();
+	}
+	function hospFormat(cellValue,options,rowObject){
+		var res = '';
+		var option = "";
+		//res+='<select name="selectrole" id="select_role" class="roleselector" style="height:18px;width: 100px;vertical-align:middle" onchange="selectOnChange(this)">';
+		option='<select name="' + rowObject.Account+ '" id="select_hosp" class="hospselector" style="height:18px;width: 450px;vertical-align:middle" onchange="selectHospOnChange(this)">';
+		res += option;
+
+
+		var bFind=false;
+		for(var i = 0,len=hosps.length; i < len; i++) {
+			//if (i==cellValue-1) {
+			if (hosps[i]._id==cellValue) {
+				option = "<option value=" + hosps[i]._id + " selected=true>"+hosps[i].institutionname + " - "+ hosps[i].hospName  +"</option>";
+				bFind=true;
+			}else{
+				option = "<option value=" + hosps[i]._id + ">"+hosps[i].institutionname + " - " + hosps[i].hospName  + "</option>";
+			}
+			res+=option;
+		}
+
+		if (!bFind){
+			option = "<option value=" + 0 + " selected=true>" + "Not Find" + "</option>";
+			res+=option;
+		}
+
+
+		res += '<select/>';
+
+		//alert("错误提示： status:" + res);
+
+		return res;
+	}
+	function hospUnFormat(cellValue,options,cell){
+		return $('input',cell).val();
+	}
+
+
+	function selectOnChange(select){
+		$.ajax({
+			cache: true,
+			type: "put",
+			timeout:2000,
+			url: "/users/" + select.name + "/Role",
+			data:{Role:select.options[select.selectedIndex].value},
+			async: true,
+			headers: { // 叠加式添加
+				Accept: "application/json; charset=utf-8",
+				accessToken:"abcd"
+			},
+			beforeSend: function(xhr){
+				// xhr.setRequestHeader('accessToken', 'test-value'); // 叠加式添加
+			},
+			error: function(xhr, statusText, errorThrown) { // XMLHttpRequest
+				// alert("错误提示： status:" + xhr.status + " responseText:" + xhr.responseText);
+				if(xhr.status != 200){
+					alert("错误提示： status:" + xhr.status + " responseText:" + statusText);
+				}
+			},
+			success: function(result,statusText,xhr) {
+
+				// var curPage = $('#list').getGridParam('page');
+				// $("#list").jqGrid().trigger("reloadGrid", {page: curPage, fromServer: true});
+				// $("#list").jqGrid().setGridParam({page:curPage})
+
+				$("#list").jqGrid().setGridParam({datatype:'json',page:1}).trigger('reloadGrid');   //重新从服务器获取数据
+				userRole=result;
+			}
+		});
+	}
+
+	function selectHospOnChange(select){
+		$.ajax({
+			cache: true,
+			type: "put",
+			timeout:2000,
+			url: "/users/" + select.name + "/Hosp",
+			data:{Hosp:select.options[select.selectedIndex].value},
+			async: true,
+			headers: { // 叠加式添加
+				Accept: "application/json; charset=utf-8",
+				accessToken:"abcd"
+			},
+			beforeSend: function(xhr){
+				// xhr.setRequestHeader('accessToken', 'test-value'); // 叠加式添加
+			},
+			error: function(xhr, statusText, errorThrown) { // XMLHttpRequest
+				// alert("错误提示： status:" + xhr.status + " responseText:" + xhr.responseText);
+				if(xhr.status != 200){
+					alert("错误提示： status:" + xhr.status + " responseText:" + statusText);
+				}
+			},
+			success: function(result,statusText,xhr) {
+
+				$("#list").jqGrid().setGridParam({datatype:'json',page:1}).trigger('reloadGrid');   //重新从服务器获取数据
+
+				userRole=result;
+			}
+		});
+	}
+
+	function SelectFun(id){
+		jQuery("#list").jqGrid('setSelection',id);
+	}
+</script>
+</body>
+</html>

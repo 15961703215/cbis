@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+	<link rel="stylesheet" type="text/css" media="screen" href="/jqgrid/themes/ui-darkness/jquery-ui.min.css" />
+	<link rel="stylesheet" type="text/css" media="screen" href="/jqgrid/css/ui.jqgrid.min.css" />
+	<script src="/js/jquery-3.3.1.min.js" type="text/javascript"></script>
+	<script src="/jqgrid/js/grid.locale-cn.min.js" type="text/javascript"></script>
+	<script src="/jqgrid/js/jquery.jqGrid.min.js" type="text/javascript"></script>
+	<script src="/js/jquery-ui.min.js" type="text/javascript"></script>
+	<style type="text/css">
+		body{
+			#margin: 0px;
+			background: #333;
+		}
+	</style>
+</head>
+<body>
+<table id="list"></table>
+<div id="pager"></div>
+<script type="text/javascript">
+	$(function() {
+		$(window.parent.frames['nav_frame'].document).find("a").removeClass("selected");
+		$(window.parent.frames['head_frame'].document).find("a").removeClass("selected");
+		$(window.parent.frames['nav_frame'].document).find("#rolesId a").attr("class","selected"); // a[href='/reports/all/managerPage']
+	});
+	function pageSize() {
+		var winW, winH;
+		if(window.innerHeight) {// all except IE
+			winW = window.innerWidth;
+			winH = window.innerHeight;
+		} else if (document.documentElement && document.documentElement.clientHeight) {// IE 6 Strict Mode
+			winW = document.documentElement.clientWidth;
+			winH = document.documentElement.clientHeight;
+		} else if (document.body) { // other
+			winW = document.body.clientWidth;
+			winH = document.body.clientHeight;
+		}  // for small pages with total size less then the viewport
+		return {WinW:winW, WinH:winH};
+	}
+	$(function(){
+		$(window).resize(function(){
+			$(window).unbind("onresize");
+			var winWh = pageSize();
+			$("#list").jqGrid('setGridWidth', winWh.WinW-16).jqGrid('setGridHeight', winWh.WinH-100);
+			$(window).bind("onresize", this);
+		});
+	});
+
+	// 权限列表
+	var authorizes = {};
+	$.ajax({
+		cache: true,
+		type: "get",
+		timeout:2000,
+		url: "/authorizes/AllAuth",
+		data:{},
+		async: false,
+		headers: { // 叠加式添加
+			Accept: "application/json; charset=utf-8",
+			accessToken:"abcd"
+		},
+		beforeSend: function(xhr){
+			// xhr.setRequestHeader('accessToken', 'test-value'); // 叠加式添加
+		},
+		error: function(xhr, statusText, errorThrown) { // XMLHttpRequest
+			// alert("错误提示： status:" + xhr.status + " responseText:" + xhr.responseText);
+			if(xhr.status != 200){
+				alert("错误提示： status:" + xhr.status + " responseText:" + statusText);
+			}
+		},
+		success: function(result,statusText,xhr) {
+			authorizes = result.rows;
+		}
+	});
+
+	$(document).ready(
+		function() {
+			var winWh = pageSize();
+			jQuery("#list").jqGrid({
+				url:'/roles/AllRole',
+				datatype: "json",
+				mtype : "GET",
+				shrinkToFit:true,
+				height: winWh.WinH-100,
+				width:"100%",
+				autowidth:true,
+				colNames:['ID','名称', '权限'],
+				colModel:[
+					{name:'_id',index:'_id', hidden:true,editable : false,sorttype:'integer'}, //width:60,
+					{name:'name',index:'name',editor:"text", editable : true},
+					{name:'aut',index:'aut', editable : false, width:500,sortable : false,formatter:autFormat,unformat:autUnFormat}
+				],
+				loadonce: true,
+				sortname:'_id',
+				sortorder:'asc',
+				viewrecords:true,
+				rowNum:20,
+				rowList:[10,20,30],
+				pager:"#pager",
+				caption: "角色管理",
+				multiselect: false,
+				jsonReader: {
+					id: "_id",
+					root : "rows",
+					page:"page",
+					total:"total",
+					records:"records",
+					repeatitems: false
+				},
+				loadComplete:function(xhr){
+				}
+			});
+			jQuery("#list").jqGrid('navGrid','#pager',{add:true,edit:true,del:true,search:false,refresh:false},
+				{ // edit
+					checkOnSubmit:false, closeAfterEdit: true,height:280,reloadAfterSubmit:false,modal: true,
+					url:"/roles",
+					mtype:"put",
+					beforeShowForm : function(form) {
+
+					},
+					onclickSubmit: function(params, postData) {
+						params.url = "/roles/" + postData._id + "/name";
+						return [true,''];
+					},
+					beforeSubmit:function(postData, formid) {
+						return [true,''];
+					},
+					afterSubmit:function(response, postData){
+						$("#list").jqGrid().setGridParam({datatype:'json',page:1}).trigger('reloadGrid');   //重新从服务器获取数据
+						return [true,''];
+					}
+				},
+				{ // add
+					checkOnSubmit:false, closeAfterAdd: true,height:280,reloadAfterSubmit:false,modal: true,jqModal: true,addedrow:'last',
+					url:"/roles",
+					mtype:"post",
+					onclickSubmit: function(params, postData) {
+						params.url = "/roles/AddExpressRole" ;
+						return [true,''];
+					},
+					beforeSubmit:function(postData, formid) {
+						// check
+						/* if(postData.id_room.replace(/(^s*)|(s*$)/g, "").length ==0)
+						 {
+						 return [false,'Name is empty!'];
+						 }*/
+						return [true,''];
+					},
+					afterSubmit:function(response, postData){
+						$("#list").jqGrid().setGridParam({datatype:'json',page:1}).trigger('reloadGrid');   //重新从服务器获取数据
+						var result=response.responseJSON;
+						// postData.id = result.id;
+						return [true,"",result.id];
+					}
+				},
+				{ // del
+					checkOnSubmit:false, reloadAfterSubmit:false,modal: true,
+					url:"/roles",
+					mtype:"delete",
+					onclickSubmit: function(params, postData) {
+						params.url = "/roles/" + postData;
+						return [true,''];
+					},
+					afterSubmit:function(response, postData) {
+						$("#list").jqGrid().setGridParam({datatype:'json',page:1}).trigger('reloadGrid');   //重新从服务器获取数据
+						return [true, ''];
+					}
+				},
+				{} // search
+			);
+		});
+
+	function autFormat(cellValue,options,rowObject){
+		var res = '';
+
+
+
+		//let tmpAuth=cellValue.split(",");
+
+		let tmpValue=cellValue;
+		tmpValue=tmpValue.replace("[","");
+		tmpValue=tmpValue.replace("]","");
+		let tmpAuth=tmpValue.split(",")
+
+		for(var i = 0,len=authorizes.length; i < len; i++) {
+
+			let bFind=false;
+			for (let j=0;j<tmpAuth.length;j++)
+			{
+
+				if (parseInt(tmpAuth[j])==parseInt(authorizes[i]._id))  bFind=true;
+			}
+
+			//if(cellValue && cellValue.indexOf(Number(authorizes[i]._id)) != -1){
+			if(cellValue && bFind){
+				res +='<input type="checkbox" style="height:14px;width:45px; vertical-align:middle;" onclick="checkboxOnclick(this)" checked  name="' + rowObject._id + '" value="' + authorizes[i]._id +'" /> <span>' + authorizes[i].Name +'</span>';
+			}else {
+				res +='<input type="checkbox" style="height:14px;width:45px; vertical-align:middle;" onclick="checkboxOnclick(this)" name="' + rowObject._id + '" value="' + authorizes[i]._id +'" /> <span>' + authorizes[i].Name +'</span>';
+			}
+		}
+		return res;
+	}
+	function autUnFormat(cellValue,options,cell){
+		return $('input',cell).val();
+	}
+
+	//点击是否启用选择框
+	function checkboxOnclick(checkbox){
+		// checkbox.checked = true;
+		$.ajax({
+			cache: true,
+			type: "put",
+			timeout:2000,
+			url: "/roles/" + checkbox.name + "/auth",
+			data:{authValue:checkbox.checked?1:0,authID:checkbox.value},
+			async: true,
+			headers: { // 叠加式添加
+				Accept: "application/json; charset=utf-8",
+				accessToken:"abcd"
+			},
+			beforeSend: function(xhr){
+				// xhr.setRequestHeader('accessToken', 'test-value'); // 叠加式添加
+			},
+			error: function(xhr, statusText, errorThrown) { // XMLHttpRequest
+				// alert("错误提示： status:" + xhr.status + " responseText:" + xhr.responseText);
+				if(xhr.status != 200){
+					alert("错误提示： status:" + xhr.status + " responseText:" + statusText);
+				}
+			},
+			success: function(result,statusText,xhr) {
+				$("#list").jqGrid().setGridParam({datatype:'json',page:1}).trigger('reloadGrid');   //重新从服务器获取数据
+				userRole = result;
+			}
+		});
+	}
+</script>
+</body>
+</html>
